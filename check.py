@@ -46,7 +46,7 @@ def check_price():
         if price:
             print("PARSED PRICE:", price)
 
-            if price < 600:
+            if price < 300:
                 notify(price)
 
 
