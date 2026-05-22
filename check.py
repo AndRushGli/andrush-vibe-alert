@@ -1,5 +1,6 @@
 from playwright.sync_api import sync_playwright
 import requests
+import re
 
 URL = "https://vibefestival.ro/hu/jegyek"
 
