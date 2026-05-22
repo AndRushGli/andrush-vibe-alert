@@ -1,8 +1,6 @@
 from playwright.sync_api import sync_playwright
 import requests
 import re
-import time
-import os
 
 URL = "https://vibefestival.ro/hu/jegyek"
 
@@ -11,18 +9,24 @@ CHAT_ID = "7183147881"
 
 SELECTOR = "#product-card-715 strong"
 
+
 def notify(price):
     requests.post(
         f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
         data={
             "chat_id": CHAT_ID,
-            "text": f"🚨 VIBE PASS OLCSÓBB: {price} RON\n{URL}"
+            "text": f"🚨 VIBE PASS olcsóbb lett: {price} RON (+ kezelési költség)\nhttps://vibefestival.ro/hu/jegyek"
         }
     )
 
+
 def extract_price(text):
-    match = re.search(r"\d+", text)
-    return int(match.group()) if match else None
+    # kiveszi az első 3 számjegyet (499, 250, stb.)
+    match = re.search(r"\d{2,3}", text)
+    if match:
+        return int(match.group())
+    return None
+
 
 def check_price():
     with sync_playwright() as p:
@@ -32,22 +36,18 @@ def check_price():
         page.goto(URL)
         page.wait_for_timeout(8000)
 
-        text = page.locator(SELECTOR).inner_text()
-        print("RAW:", text)
-
-        price = extract_price(text)
-
-        if price and price < 300:
-            notify(price)
+        price_text = page.locator(SELECTOR).inner_text()
+        print("RAW:", price_text)
 
         browser.close()
 
+        price = extract_price(price_text)
 
-# 🔥 FOREVER LOOP (EZ A RENDER LÉNYEG)
-while True:
-    try:
-        check_price()
-    except Exception as e:
-        print("ERROR:", e)
+        if price:
+            print("PARSED PRICE:", price)
 
-    time.sleep(60)  # 1 perc
+            if price < 600:
+                notify(price)
+
+
+check_price()
